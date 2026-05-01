@@ -1,0 +1,9 @@
+env/
+__pycache__/
+
+datasets/
+*.csv
+
+top-1m.csv
+verified_online.csv
+malicious_phish.csv

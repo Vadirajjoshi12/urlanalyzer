@@ -1,0 +1,219 @@
+body {
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 
+                 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #f5f6fa;
+    text-align: center;
+}
+.title {
+    margin-top: 50px;
+    font-size: 40px;
+}
+
+/* Input */
+.input-section {
+    margin-top: 30px;
+}
+
+.input-section input {
+    padding: 12px;
+    width: 300px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+.input-section button {
+    padding: 12px 20px;
+    margin-left: 10px;
+    background: black;
+    color: white;
+    border-radius: 8px;
+    border: none;
+}
+
+/* Hidden */
+.hidden {
+    display: none;
+}
+
+/* Loader */
+.progress-bar {
+    width: 60%;
+    height: 10px;
+    background: #ddd;
+    border-radius: 10px;
+    margin: 20px auto;
+    overflow: hidden;
+}
+
+.progress {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    animation: loading 2s infinite;
+}
+
+.progress {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    transition: width 0.3s ease;
+}
+
+.result-card {
+    margin-top: 40px;
+    padding: 20px;
+    border-radius: 15px;
+    background: white;
+    width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 
+                 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Progress bar */
+.bar {
+    width: 300px;
+    height: 10px;
+    background: #ddd;
+    margin: 10px auto;
+    border-radius: 5px;
+}
+
+.fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.5s ease;
+}
+
+/* Colors */
+.safe { color: green; }
+.suspicious { color: orange; }
+.dangerous { color: red; }
+
+/* Reasons */
+.reasons {
+    text-align: left;
+    margin-top: 15px;
+}
+.ai-list {
+    text-align: left;
+    margin-top: 10px;
+}
+
+.ai-list li {
+    margin-bottom: 6px;
+    line-height: 1.4;
+}
+.ai-insight-box {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 5px solid #007bff;
+    margin-top: 15px;
+}
+
+.ai-insight-box h3 {
+    margin-top: 0;
+    color: #333;
+}
+.ai-box {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f5f9ff;
+    border-left: 5px solid #007bff;
+    border-radius: 8px;
+    text-align: left;
+}
+
+.ai-title {
+    font-weight: bold;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.ai-box ul {
+    margin-top: 5px;
+    padding-left: 20px;
+}
+
+.ai-typing::after {
+    content: "|";
+    opacity: 0.6;
+    animation: blink 1.2s infinite;
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
+.ai-typing {
+    white-space: pre-line;
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 
+                 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #2c3e50;
+}
+.ai-box h3 {
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 
+                 'Segoe UI', Roboto, sans-serif;
+    font-weight: 600;
+}
+/* 🔥 SHIMMER CARD */
+.shimmer-card {
+    width: 60%;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 15px;
+    background: white;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+}
+
+/* 🔥 SHIMMER LINES */
+.shimmer-line {
+    height: 14px;
+    background: #eee;
+    margin: 12px 0;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+}
+
+.shimmer-line.title {
+    width: 40%;
+    height: 20px;
+}
+
+.shimmer-line.small {
+    width: 60%;
+}
+
+/* ✨ SHIMMER EFFECT */
+.shimmer-line::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -150px;
+    height: 100%;
+    width: 150px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,0.6),
+        transparent
+    );
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        left: -150px;
+    }
+    100% {
+        left: 100%;
+    }
+}
