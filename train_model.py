@@ -21,11 +21,13 @@ with open("datasets/legit.txt") as f:
 # -----------------------------
 rows = []
 
+# PHISHING URLS
 for url in phishing_urls:
-    rows.append(extract_features(url) + [0])
-
-for url in legit_urls:
     rows.append(extract_features(url) + [1])
+
+# LEGIT URLS
+for url in legit_urls:
+    rows.append(extract_features(url) + [0])
 
 columns = FEATURE_COLUMNS + ["label"]
 
