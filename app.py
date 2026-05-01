@@ -4,25 +4,22 @@ import pandas as pd
 import pickle
 import os
 import requests
-import whois
-from datetime import datetime
-from urllib.parse import urlparse
 
-import google.generativeai as genai
 from dotenv import load_dotenv
+load_dotenv()
+
+from google import genai
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 from features import extract_features, FEATURE_COLUMNS
 
-# -----------------------------
-# 🔧 INIT
-# -----------------------------
+import whois
+from datetime import datetime
+
 app = Flask(__name__)
 CORS(app)
-
-load_dotenv()
 
 # -----------------------------
 # 🔑 LOAD MODEL
@@ -32,33 +29,35 @@ model = pickle.load(open("model.pkl", "rb"))
 # -----------------------------
 # 🤖 GEMINI SETUP
 # -----------------------------
-GEMINI_KEY = os.getenv("GEMINI_API_KEY")
-
-gemini_model = None
-
-if GEMINI_KEY:
-
-    genai.configure(api_key=GEMINI_KEY)
-
-    gemini_model = genai.GenerativeModel(
-        "gemini-2.5-flash"
-    )
+client = genai.Client(
+    api_key=os.getenv("GEMINI_API_KEY")
+)
 
 # -----------------------------
 # 🌍 TRUSTED DOMAINS
 # -----------------------------
 TRUSTED_DOMAINS = [
     "google.com",
+    "facebook.com",
+    "instagram.com",
+    "amazon.com",
+    "amazon.in",
     "microsoft.com",
     "apple.com",
-    "amazon.in",
     "github.com",
+    "linkedin.com",
+    "paypal.com",
+    "openai.com",
     "wikipedia.org"
 ]
 
 def is_trusted(url):
-    domain = urlparse(url).netloc.lower()
-    return any(d in domain for d in TRUSTED_DOMAINS)
+    domain = url.split("//")[-1].split("/")[0].lower()
+
+    return any(
+        trusted == domain or domain.endswith("." + trusted)
+        for trusted in TRUSTED_DOMAINS
+    )
 
 # -----------------------------
 # 🚨 BLACKLIST CHECK
@@ -71,11 +70,13 @@ def check_blacklist(url):
         )
 
         if response.status_code == 200:
+
             phishing_urls = response.text.splitlines()[:2000]
 
             for p in phishing_urls:
+
                 if url.lower() in p.lower():
-                    return -40, "URL found in phishing blacklist"
+                    return -60, "URL found in phishing blacklist"
 
         return 0, None
 
@@ -83,20 +84,32 @@ def check_blacklist(url):
         return 0, None
 
 # -----------------------------
-# 🔍 BASIC CHECK
+# 🔍 BASIC URL CHECK
 # -----------------------------
 def basic_url_check(url):
+
     score = 100
     reasons = []
+
+    lowered = url.lower()
 
     if not url.startswith("https"):
         score -= 20
         reasons.append("No HTTPS")
 
-    if any(
-        w in url.lower()
-        for w in ["login", "verify", "bank", "account", "secure"]
-    ):
+    suspicious_words = [
+        "login",
+        "verify",
+        "bank",
+        "account",
+        "secure",
+        "signin",
+        "update",
+        "wallet",
+        "confirm"
+    ]
+
+    if any(w in lowered for w in suspicious_words):
         score -= 15
         reasons.append("Contains sensitive keywords")
 
@@ -104,9 +117,17 @@ def basic_url_check(url):
         score -= 10
         reasons.append("URL too long")
 
-    if url.count("/") > 4:
+    if url.count("/") > 5:
         score -= 10
         reasons.append("Too many URL segments")
+
+    if "@" in url:
+        score -= 25
+        reasons.append("@ symbol detected")
+
+    if "-" in lowered:
+        score -= 8
+        reasons.append("Hyphenated domain")
 
     return score, reasons
 
@@ -114,8 +135,9 @@ def basic_url_check(url):
 # 🌍 DOMAIN AGE
 # -----------------------------
 def get_domain_age_score(url):
+
     try:
-        domain = urlparse(url).netloc
+        domain = url.split("//")[-1].split("/")[0]
 
         w = whois.whois(domain)
 
@@ -130,21 +152,22 @@ def get_domain_age_score(url):
         age_days = (datetime.now() - creation_date).days
 
         if age_days > 365:
-            return 0, "Old domain"
+            return 10, "Old trusted domain"
 
         elif age_days > 180:
-            return -5, "Medium age domain"
+            return 0, "Medium age domain"
 
         else:
-            return -15, "New domain (risky)"
+            return -20, "Very new domain"
 
     except:
-        return -10, None
+        return -5, "Domain age unknown"
 
 # -----------------------------
 # 🔐 LOGIN DETECTION
 # -----------------------------
 def detect_login_risk(driver):
+
     score_delta = 0
     reasons = []
 
@@ -156,12 +179,8 @@ def detect_login_risk(driver):
     for i in inputs:
 
         t = (i.get_attribute("type") or "").lower()
-
         name = (i.get_attribute("name") or "").lower()
-
-        placeholder = (
-            i.get_attribute("placeholder") or ""
-        ).lower()
+        placeholder = (i.get_attribute("placeholder") or "").lower()
 
         if t == "password":
             has_password = True
@@ -177,6 +196,7 @@ def detect_login_risk(driver):
         reasons.append("Login form detected")
 
         if not driver.current_url.startswith("https"):
+
             score_delta -= 25
             reasons.append("Login form on non-HTTPS")
 
@@ -187,10 +207,6 @@ def detect_login_risk(driver):
 # -----------------------------
 def analyze_with_selenium(url):
 
-    # 🔥 Disable Selenium on Render
-    if os.getenv("RENDER") == "true":
-        return 100, ["Selenium skipped (production mode)"], [], [], []
-
     score = 100
     reasons = []
 
@@ -199,6 +215,7 @@ def analyze_with_selenium(url):
     driver = None
 
     try:
+
         options = Options()
 
         options.add_argument("--headless")
@@ -218,9 +235,7 @@ def analyze_with_selenium(url):
             reasons.append("Redirect detected")
 
         links = driver.find_elements("tag name", "a")
-
         forms = driver.find_elements("tag name", "form")
-
         iframes = driver.find_elements("tag name", "iframe")
 
         login_score, login_reasons = detect_login_risk(driver)
@@ -234,10 +249,12 @@ def analyze_with_selenium(url):
             reasons.append("Too many iframes")
 
     except:
+
         score -= 40
-        reasons.append("Website unreachable")
+        reasons.append("Selenium skipped (production mode)")
 
     finally:
+
         if driver:
             driver.quit()
 
@@ -246,26 +263,12 @@ def analyze_with_selenium(url):
 # -----------------------------
 # 🤖 AI SUMMARY
 # -----------------------------
-# -----------------------------
-# 🤖 AI SUMMARY
-# -----------------------------
 def generate_ai_summary(url, score, status, reasons):
 
-    if not gemini_model:
-
-        return """
-WHY:
-• AI service unavailable
-
-RISKS:
-• Unable to analyze risks
-
-ADVICE:
-• Try again later
-"""
-
     prompt = f"""
-Analyze this URL for phishing risk.
+You are a cybersecurity expert.
+
+Analyze this URL:
 
 URL: {url}
 
@@ -273,47 +276,42 @@ Threat Score: {score}/100
 
 Status: {status}
 
-Detected Issues:
+Detected Reasons:
 {', '.join(reasons)}
 
-Return STRICTLY in this format:
+Respond ONLY in this format:
 
 WHY:
-• short explanation
+short explanation
 
 RISKS:
-• risk 1
-• risk 2
+- risk 1
+- risk 2
 
 ADVICE:
-• advice 1
-• advice 2
+- advice 1
+- advice 2
 """
 
     try:
 
-        response = gemini_model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
 
-        ai_text = response.text.strip()
-
-        ai_text = ai_text.replace("**", "")
-        ai_text = ai_text.replace("* ", "• ")
-        ai_text = ai_text.replace("- ", "• ")
-
-        return ai_text
+        return response.text.strip()
 
     except Exception as e:
 
-        error_msg = str(e)
-
-        print("AI ERROR:", error_msg)
+        print("AI ERROR:", str(e))
 
         return f"""
 WHY:
-• AI generation failed
+AI generation failed
 
 RISKS:
-• {error_msg}
+• {str(e)}
 
 ADVICE:
 • Check Gemini API configuration
@@ -329,9 +327,6 @@ def home():
 # -----------------------------
 # 🚀 ANALYZE
 # -----------------------------
-# -----------------------------
-# 🚀 ANALYZE
-# -----------------------------
 @app.route("/analyze", methods=["POST"])
 def analyze():
 
@@ -339,31 +334,25 @@ def analyze():
 
         data = request.get_json()
 
-        if not data or "url" not in data:
-            return jsonify({"error": "URL missing"}), 400
+        url = data.get("url").strip()
 
-        url = data.get("url", "").strip()
-
-        if not url:
-            return jsonify({"error": "Empty URL"}), 400
-
-        if "://" not in url:
+        if not url.startswith("http"):
             url = "https://" + url
 
         # -----------------------------
-        # 🔍 BASIC CHECK
+        # BASIC CHECK
         # -----------------------------
         score1, reasons1 = basic_url_check(url)
 
         # -----------------------------
-        # 🌐 SELENIUM CHECK
+        # SELENIUM
         # -----------------------------
         score2, reasons2, links, forms, iframes = analyze_with_selenium(url)
 
         reasons = list(set(reasons1 + reasons2))
 
         # -----------------------------
-        # 🤖 ML FEATURES
+        # ML FEATURES
         # -----------------------------
         feature_values = extract_features(
             url,
@@ -377,143 +366,103 @@ def analyze():
             columns=FEATURE_COLUMNS
         )
 
-        # -----------------------------
-        # 🤖 ML PREDICTION
-        # -----------------------------
         prediction = model.predict(features)[0]
 
         probability = model.predict_proba(features)[0][1]
 
-        # 1 = phishing
         danger_score = int(probability * 100)
 
-        safe_score = 100 - danger_score
-
-        ml_status = (
-            "Dangerous"
-            if danger_score >= 60
-            else "Safe"
-        )
-
         # -----------------------------
-        # 🎯 BASE SCORE
-        # -----------------------------
-        final_score = min(score1, score2)
-
-        # -----------------------------
-        # 🚨 BLACKLIST CHECK
+        # BLACKLIST
         # -----------------------------
         bl_score, bl_reason = check_blacklist(url)
 
-        final_score += bl_score
+        danger_score += abs(bl_score)
 
         if bl_reason:
             reasons.append(bl_reason)
 
         # -----------------------------
-        # 🌍 DOMAIN AGE
+        # DOMAIN AGE
         # -----------------------------
         age_score, age_reason = get_domain_age_score(url)
 
-        final_score += age_score
+        if age_score < 0:
+            danger_score += abs(age_score)
+
+        else:
+            danger_score -= age_score
 
         if age_reason:
             reasons.append(age_reason)
 
         # -----------------------------
-        # 🔐 LOGIN RISK
+        # LOGIN FORM
         # -----------------------------
         if "Login form on non-HTTPS" in reasons:
-            final_score = min(final_score, 35)
+            danger_score += 25
 
         # -----------------------------
-        # 🔁 REDIRECT
+        # REDIRECT
         # -----------------------------
         if "Redirect detected" in reasons:
-            final_score -= 10
+            danger_score += 10
 
         # -----------------------------
-        # 🤖 ML INFLUENCE
-        # -----------------------------
-        if danger_score >= 85:
-            final_score = min(final_score, 25)
-
-        elif danger_score >= 70:
-            final_score = min(final_score, 40)
-
-        elif danger_score >= 60:
-            final_score = min(final_score, 55)
-
-        # -----------------------------
-        # 🧠 TRUSTED DOMAIN OVERRIDE
+        # TRUSTED DOMAIN FIX
         # -----------------------------
         if is_trusted(url):
 
-            final_score = max(final_score, 85)
+            danger_score = min(danger_score, 15)
 
             reasons = [
                 r for r in reasons
                 if r != "Contains sensitive keywords"
             ]
 
-            ml_status = "Safe"
-
-            safe_score = max(safe_score, 85)
-
-            danger_score = min(danger_score, 15)
+        # -----------------------------
+        # LIMIT SCORE
+        # -----------------------------
+        danger_score = max(0, min(danger_score, 100))
 
         # -----------------------------
-        # 🎯 FINAL SCORE LIMIT
+        # FINAL STATUS
         # -----------------------------
-        final_score = max(
-            0,
-            min(int(final_score), 100)
-        )
+        if danger_score >= 60:
+            verdict = "Dangerous"
 
-        # -----------------------------
-        # 🚦 FINAL STATUS
-        # -----------------------------
-        if danger_score >= 70:
-            status = "Dangerous"
-
-        elif danger_score >= 45:
-            status = "Suspicious"
+        elif danger_score >= 35:
+            verdict = "Suspicious"
 
         else:
-            status = "Safe"
+            verdict = "Safe"
 
         # -----------------------------
-        # 🤖 AI SUMMARY
+        # AI SUMMARY
         # -----------------------------
         ai_summary = generate_ai_summary(
             url,
-            final_score,
-            status,
+            danger_score,
+            verdict,
             reasons
         )
 
-        # -----------------------------
-        # ✅ RESPONSE
-        # -----------------------------
         return jsonify({
 
             "url": url,
 
-            "status": status,
-
-            "score": safe_score,
-
-            "safe_score": safe_score,
+            "score": danger_score,
 
             "danger_score": danger_score,
 
-            "ml_prediction": ml_status,
+            "safe_score": 100 - danger_score,
 
-            "prediction_label": int(prediction),
+            "status": verdict,
 
             "reasons": reasons,
 
             "ai_summary": ai_summary
+
         })
 
     except Exception as e:
@@ -521,15 +470,11 @@ def analyze():
         print("ERROR:", e)
 
         return jsonify({
-            "error": "Internal server error"
+            "error": str(e)
         }), 500
 
 # -----------------------------
-# 🚀 RUN
+# RUN
 # -----------------------------
 if __name__ == "__main__":
-
-    app.run(
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000))
-    )
+    app.run(debug=True)

@@ -370,37 +370,52 @@ function formatAI(text) {
 
     line = line.trim();
 
-    if (line.toLowerCase().includes("why")) {
+    if (!line) return;
+
+    const lower = line.toLowerCase();
+
+    if (lower.startsWith("why")) {
       current = "why";
+      return;
     }
 
-    else if (line.toLowerCase().includes("risk")) {
+    if (lower.startsWith("risks")) {
       current = "risks";
+      return;
     }
 
-    else if (line.toLowerCase().includes("advice")) {
+    if (lower.startsWith("advice")) {
       current = "advice";
+      return;
     }
 
-    else if (line.startsWith("•")) {
+    // REMOVE BULLETS / STARS / DASHES
+    line = line
+      .replace(/^[-•*]\s*/, "")
+      .trim();
 
-      sections[current].push(
-        line.replace("•", "").trim()
-      );
+    if (current) {
+      sections[current].push(line);
     }
 
   });
 
+  // WHY
   if (sections.why.length) {
 
     container.innerHTML += `
       <div class="ai-block ai-why">
         <div class="ai-title">WHY</div>
-        ${sections.why.join("<br><br>")}
+        <div class="space-y-3">
+          ${sections.why.map(w =>
+            `<p>${w}</p>`
+          ).join("")}
+        </div>
       </div>
     `;
   }
 
+  // RISKS
   if (sections.risks.length) {
 
     container.innerHTML += `
@@ -415,6 +430,7 @@ function formatAI(text) {
     `;
   }
 
+  // ADVICE
   if (sections.advice.length) {
 
     container.innerHTML += `
