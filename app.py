@@ -8,7 +8,7 @@ import requests
 from dotenv import load_dotenv
 load_dotenv()
 
-from google import genai
+import google.generativeai as genai
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -29,7 +29,7 @@ model = pickle.load(open("model.pkl", "rb"))
 # -----------------------------
 # 🤖 GEMINI SETUP
 # -----------------------------
-client = genai.Client(
+genai.configure(
     api_key=os.getenv("GEMINI_API_KEY")
 )
 
@@ -295,10 +295,9 @@ ADVICE:
 
     try:
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
+        model = genai.GenerativeModel("gemini-2.5-flash")
+
+        response = model.generate_content(prompt)
 
         return response.text.strip()
 
