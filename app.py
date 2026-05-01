@@ -8,7 +8,7 @@ import whois
 from datetime import datetime
 from urllib.parse import urlparse
 
-from google import genai
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 from selenium import webdriver
@@ -34,10 +34,15 @@ model = pickle.load(open("model.pkl", "rb"))
 # -----------------------------
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 
-client = None
+gemini_model = None
 
 if GEMINI_KEY:
-    client = genai.Client(api_key=GEMINI_KEY)
+
+    genai.configure(api_key=GEMINI_KEY)
+
+    gemini_model = genai.GenerativeModel(
+        "gemini-2.5-flash"
+    )
 
 # -----------------------------
 # 🌍 TRUSTED DOMAINS
@@ -241,68 +246,75 @@ def analyze_with_selenium(url):
 # -----------------------------
 # 🤖 AI SUMMARY
 # -----------------------------
+# -----------------------------
+# 🤖 AI SUMMARY
+# -----------------------------
 def generate_ai_summary(url, score, status, reasons):
 
-    if not client:
+    if not gemini_model:
+
         return """
-Why:
+WHY:
 • AI service unavailable
 
-Risks:
+RISKS:
 • Unable to analyze risks
 
-Advice:
+ADVICE:
 • Try again later
 """
 
     prompt = f"""
-You are a cybersecurity expert.
+Analyze this URL for phishing risk.
 
 URL: {url}
-Score: {score}
+
+Threat Score: {score}/100
+
 Status: {status}
-Issues: {', '.join(reasons)}
 
-STRICT FORMAT:
+Detected Issues:
+{', '.join(reasons)}
 
-Why:
-• Explain clearly
+Return STRICTLY in this format:
 
-Risks:
-• List risks
+WHY:
+• short explanation
 
-Advice:
-• Give actions
+RISKS:
+• risk 1
+• risk 2
+
+ADVICE:
+• advice 1
+• advice 2
 """
 
     try:
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
-        )
+        response = gemini_model.generate_content(prompt)
 
-        text = response.text.strip()
+        ai_text = response.text.strip()
 
-        text = text.replace("**", "")
-        text = text.replace("* ", "• ")
-        text = text.replace("- ", "• ")
+        ai_text = ai_text.replace("**", "")
+        ai_text = ai_text.replace("* ", "• ")
+        ai_text = ai_text.replace("- ", "• ")
 
-        return text
+        return ai_text
 
-    except:
-        return """
-Why:
-• Suspicious URL behavior detected.
+    except Exception as e:
 
-Risks:
-• Credential theft
-• Phishing
-• Fake login pages
+        print("AI ERROR:", e)
 
-Advice:
-• Avoid interacting with the site
-• Verify domain manually
+        return f"""
+WHY:
+• Could not generate AI analysis
+
+RISKS:
+• AI service unavailable
+
+ADVICE:
+• Try again later
 """
 
 # -----------------------------
