@@ -315,6 +315,9 @@ def home():
 # -----------------------------
 # 🚀 ANALYZE
 # -----------------------------
+# -----------------------------
+# 🚀 ANALYZE
+# -----------------------------
 @app.route("/analyze", methods=["POST"])
 def analyze():
 
@@ -333,15 +336,21 @@ def analyze():
         if "://" not in url:
             url = "https://" + url
 
-        # 🔍 BASIC
+        # -----------------------------
+        # 🔍 BASIC CHECK
+        # -----------------------------
         score1, reasons1 = basic_url_check(url)
 
-        # 🌐 SELENIUM
+        # -----------------------------
+        # 🌐 SELENIUM CHECK
+        # -----------------------------
         score2, reasons2, links, forms, iframes = analyze_with_selenium(url)
 
         reasons = list(set(reasons1 + reasons2))
 
-        # 🤖 ML
+        # -----------------------------
+        # 🤖 ML FEATURES
+        # -----------------------------
         feature_values = extract_features(
             url,
             len(links),
@@ -354,14 +363,32 @@ def analyze():
             columns=FEATURE_COLUMNS
         )
 
+        # -----------------------------
+        # 🤖 ML PREDICTION
+        # -----------------------------
         prediction = model.predict(features)[0]
 
-        ml_status = "Safe" if prediction == 1 else "Dangerous"
+        probability = model.predict_proba(features)[0][1]
 
+        # 1 = phishing
+        danger_score = int(probability * 100)
+
+        safe_score = 100 - danger_score
+
+        ml_status = (
+            "Dangerous"
+            if danger_score >= 60
+            else "Safe"
+        )
+
+        # -----------------------------
         # 🎯 BASE SCORE
+        # -----------------------------
         final_score = min(score1, score2)
 
-        # 🚨 BLACKLIST
+        # -----------------------------
+        # 🚨 BLACKLIST CHECK
+        # -----------------------------
         bl_score, bl_reason = check_blacklist(url)
 
         final_score += bl_score
@@ -369,7 +396,9 @@ def analyze():
         if bl_reason:
             reasons.append(bl_reason)
 
+        # -----------------------------
         # 🌍 DOMAIN AGE
+        # -----------------------------
         age_score, age_reason = get_domain_age_score(url)
 
         final_score += age_score
@@ -377,43 +406,71 @@ def analyze():
         if age_reason:
             reasons.append(age_reason)
 
+        # -----------------------------
         # 🔐 LOGIN RISK
+        # -----------------------------
         if "Login form on non-HTTPS" in reasons:
             final_score = min(final_score, 35)
 
+        # -----------------------------
         # 🔁 REDIRECT
+        # -----------------------------
         if "Redirect detected" in reasons:
             final_score -= 10
 
-        # 🧠 TRUSTED OVERRIDE
+        # -----------------------------
+        # 🤖 ML INFLUENCE
+        # -----------------------------
+        if danger_score >= 85:
+            final_score = min(final_score, 25)
+
+        elif danger_score >= 70:
+            final_score = min(final_score, 40)
+
+        elif danger_score >= 60:
+            final_score = min(final_score, 55)
+
+        # -----------------------------
+        # 🧠 TRUSTED DOMAIN OVERRIDE
+        # -----------------------------
         if is_trusted(url):
 
-            final_score = max(final_score, 80)
+            final_score = max(final_score, 85)
 
             reasons = [
                 r for r in reasons
                 if r != "Contains sensitive keywords"
             ]
 
+            ml_status = "Safe"
+
+            safe_score = max(safe_score, 85)
+
+            danger_score = min(danger_score, 15)
+
+        # -----------------------------
+        # 🎯 FINAL SCORE LIMIT
+        # -----------------------------
         final_score = max(
             0,
             min(int(final_score), 100)
         )
 
-        # 🎯 STATUS
-        if final_score >= 80:
-            status = "Safe"
+        # -----------------------------
+        # 🚦 FINAL STATUS
+        # -----------------------------
+        if danger_score >= 70:
+            status = "Dangerous"
 
-        elif final_score >= 50:
+        elif danger_score >= 45:
             status = "Suspicious"
 
         else:
-            status = "Dangerous"
+            status = "Safe"
 
-        if ml_status == "Dangerous" and final_score < 60:
-            status = "Dangerous"
-
-        # 🤖 AI
+        # -----------------------------
+        # 🤖 AI SUMMARY
+        # -----------------------------
         ai_summary = generate_ai_summary(
             url,
             final_score,
@@ -421,12 +478,27 @@ def analyze():
             reasons
         )
 
+        # -----------------------------
+        # ✅ RESPONSE
+        # -----------------------------
         return jsonify({
+
             "url": url,
-            "score": final_score,
+
             "status": status,
+
+            "score": safe_score,
+
+            "safe_score": safe_score,
+
+            "danger_score": danger_score,
+
             "ml_prediction": ml_status,
+
+            "prediction_label": int(prediction),
+
             "reasons": reasons,
+
             "ai_summary": ai_summary
         })
 
