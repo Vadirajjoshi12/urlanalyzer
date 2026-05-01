@@ -304,17 +304,19 @@ ADVICE:
 
     except Exception as e:
 
-        print("AI ERROR:", e)
+        error_msg = str(e)
+
+        print("AI ERROR:", error_msg)
 
         return f"""
 WHY:
-• Could not generate AI analysis
+• AI generation failed
 
 RISKS:
-• AI service unavailable
+• {error_msg}
 
 ADVICE:
-• Try again later
+• Check Gemini API configuration
 """
 
 # -----------------------------
