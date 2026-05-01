@@ -1,181 +1,356 @@
+```html
 <!DOCTYPE html>
-
 <html lang="en">
+
 <head>
 <meta charset="UTF-8">
-<title>Aegis Protocol</title>
+<title>OnlyGenius</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
-<!-- Geist Font -->
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
+
 body {
   background: #020202;
   font-family: 'Geist', sans-serif;
+  overflow-x: hidden;
+  color: white;
 }
 
-.tracking-tighter {
-  letter-spacing: -0.02em;
+/* Animated background */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+
+  background:
+    radial-gradient(circle at 20% 20%, rgba(0,245,255,0.08), transparent 30%),
+    radial-gradient(circle at 80% 30%, rgba(255,0,80,0.05), transparent 30%),
+    radial-gradient(circle at 50% 80%, rgba(0,255,150,0.05), transparent 30%);
+
+  filter: blur(80px);
+
+  animation: pulseBg 10s ease-in-out infinite alternate;
+
+  pointer-events: none;
 }
 
-/* Glass UI */
+@keyframes pulseBg {
+
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.08);
+  }
+}
+
 .glass {
-  background: rgba(255,255,255,0.02);
-  backdrop-filter: blur(16px);
+
+  background: rgba(255,255,255,0.03);
+
+  backdrop-filter: blur(18px);
+
   border: 1px solid rgba(255,255,255,0.08);
+
+  transition: all 0.35s ease;
+
+  position: relative;
+
+  overflow: hidden;
 }
 
-/* Bento Grid */
+.glass:hover {
+
+  transform: translateY(-6px);
+
+  border-color: rgba(0,245,255,0.35);
+
+  box-shadow:
+    0 0 25px rgba(0,245,255,0.18),
+    0 0 80px rgba(0,245,255,0.08);
+}
+
+/* Cursor glow */
+.glass::before {
+
+  content: "";
+
+  position: absolute;
+
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle at var(--x) var(--y),
+      rgba(0,245,255,0.18),
+      transparent 30%
+    );
+
+  opacity: 0;
+
+  transition: opacity 0.3s ease;
+}
+
+.glass:hover::before {
+  opacity: 1;
+}
+
+/* Shield animation */
+#shield {
+
+  animation: floatShield 4s ease-in-out infinite;
+
+  box-shadow:
+    0 0 40px rgba(0,245,255,0.2),
+    0 0 100px rgba(0,245,255,0.08);
+}
+
+@keyframes floatShield {
+
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* Button */
+#analyzeBtn {
+
+  transition: all 0.25s ease;
+}
+
+#analyzeBtn:hover {
+
+  transform: scale(1.08);
+
+  box-shadow:
+    0 0 20px rgba(0,245,255,0.45),
+    0 0 60px rgba(0,245,255,0.2);
+}
+
+#scoreBar {
+
+  transition:
+    width 0.8s cubic-bezier(0.22,1,0.36,1),
+    background 0.4s ease;
+}
+
+/* Grid */
 .grid-bento {
+
   display: grid;
+
   grid-template-columns: repeat(12, 1fr);
-  gap: 1.25rem;
+
+  gap: 1.5rem;
 }
 
-/* AI Blocks */
+/* AI blocks */
 .ai-block {
-  padding: 16px;
-  border-radius: 12px;
+
+  padding: 18px;
+
+  border-radius: 16px;
+
   background: rgba(255,255,255,0.02);
+
   border: 1px solid rgba(255,255,255,0.08);
+
+  transition: all 0.3s ease;
+}
+
+.ai-block:hover {
+
+  transform: translateY(-4px);
 }
 
 .ai-title {
-  font-size: 13px;
-  margin-bottom: 8px;
+
+  font-size: 12px;
+
+  margin-bottom: 10px;
+
   opacity: 0.7;
+
   text-transform: uppercase;
+
   letter-spacing: 0.08em;
 }
 
-.ai-why { border-left: 3px solid #00F5FF; }
-.ai-risk { border-left: 3px solid #FF3B3B; }
-.ai-advice { border-left: 3px solid #22c55e; }
-</style>
+.ai-why {
+  border-left: 3px solid #00F5FF;
+}
 
+.ai-risk {
+  border-left: 3px solid #FF3B3B;
+}
+
+.ai-advice {
+  border-left: 3px solid #22c55e;
+}
+
+</style>
 </head>
 
-<body class="text-white">
-
-<!-- Noise Layer -->
-
-<div class="fixed inset-0 opacity-[0.03] pointer-events-none">
-  <svg width="100%" height="100%">
-    <filter id="noise">
-      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3"/>
-    </filter>
-    <rect width="100%" height="100%" filter="url(#noise)"/>
-  </svg>
-</div>
+<body>
 
 <!-- HERO -->
-
 <section class="h-screen flex flex-col items-center justify-center text-center relative z-10">
 
-  <div id="shield"
-    class="w-40 h-40 mb-6 rounded-2xl glass flex items-center justify-center text-4xl transition-transform duration-200">
-    🖥️
-  </div>
+<div id="shield"
+class="w-40 h-40 mb-6 rounded-2xl glass flex items-center justify-center text-5xl">
+🛡️
+</div>
 
-  <h1 class="text-5xl tracking-tighter font-semibold">
-    OnlyGenius  
-  </h1>
+<h1 class="text-6xl font-semibold tracking-tight">
+OnlyGenius
+</h1>
 
-  <p class="mt-4 text-white/60 max-w-xl">
-    Real-time phishing intelligence powered by AI + rule-based detection.
-  </p>
+<p class="mt-4 text-white/60 max-w-xl">
+Real-time phishing intelligence powered by AI + rule-based detection.
+</p>
 
-  <!-- INPUT -->
+<div class="mt-8 flex gap-4">
 
-  <div class="mt-8 flex gap-3">
-    <input id="urlInput"
-      placeholder="https://example.com"
-      class="px-4 py-3 bg-black/40 border border-white/10 rounded-xl w-80 outline-none"/>
+<input
+id="urlInput"
+placeholder="https://example.com"
+class="px-5 py-3 bg-black/40 border border-white/10 rounded-xl w-96 outline-none"
+/>
 
-```
-<button id="analyzeBtn"
-  onclick=analyze()
-  class="px-6 py-3 bg-cyan-400 text-black rounded-xl font-semibold hover:scale-105 transition">
-  Analyze
+<button
+id="analyzeBtn"
+onclick="analyze()"
+class="px-7 py-3 bg-cyan-400 text-black rounded-xl font-semibold">
+
+Analyze
+
 </button>
-```
 
-  </div>
+</div>
 
 </section>
 
 <!-- RESULTS -->
-
 <section class="px-10 pb-24 grid-bento relative z-10">
 
-  <!-- RESULT CARD -->
+<!-- RESULT CARD -->
+<div
+id="resultCard"
+class="glass p-6 col-span-4 hidden">
 
-  <div id="resultCard"
-    class="glass p-6 col-span-4 row-span-2 hidden">
-
-```
-<h2 class="text-xl mb-4 tracking-tighter">Threat Analysis</h2>
-
-<div class="mb-4">
-  <div class="text-sm text-white/60">Risk Score</div>
-  <div id="scoreText" class="text-3xl font-bold"></div>
-
-  <div class="w-full bg-white/10 rounded-full h-2 mt-2">
-    <div id="scoreBar"
-      class="h-2 rounded-full transition-all duration-500"></div>
-  </div>
-</div>
-
-<div id="statusBadge"
-  class="inline-block px-3 py-1 rounded-full text-sm"></div>
-
-<div class="mt-4 text-sm text-white/70">
-  <ul id="reasonsList"></ul>
-</div>
-```
-
-  </div>
-
-  <!-- AI CARD -->
-
-  <div id="aiCard"
-    class="glass p-8 col-span-6 row-span-2 hidden max-h-[500px] overflow-y-auto">
-
-```
-<h2 class="text-2xl mb-6 tracking-tighter">
-  AI Threat Intelligence
+<h2 class="text-2xl mb-5">
+Threat Analysis
 </h2>
 
-<div id="aiStructured" class="space-y-6"></div>
-```
+<div class="mb-4">
 
-  </div>
+<div class="text-sm text-white/60">
+Threat Score
+</div>
+
+<div id="scoreText"
+class="text-5xl font-bold mt-2">
+0/100
+</div>
+
+<div class="w-full bg-white/10 rounded-full h-3 mt-4">
+
+<div
+id="scoreBar"
+class="h-3 rounded-full"
+style="width:0%">
+</div>
+
+</div>
+
+</div>
+
+<div
+id="statusBadge"
+class="inline-block px-4 py-1 rounded-full text-sm">
+</div>
+
+<ul
+id="reasonsList"
+class="mt-5 text-sm text-white/70 space-y-2">
+</ul>
+
+</div>
+
+<!-- AI CARD -->
+<div
+id="aiCard"
+class="glass p-8 col-span-8 hidden">
+
+<h2 class="text-3xl mb-6">
+AI Threat Intelligence
+</h2>
+
+<div
+id="aiStructured"
+class="space-y-6">
+</div>
+
+</div>
 
 </section>
 
 <script>
 
-/* 3D Shield */
+/* 3D shield */
 document.addEventListener("mousemove", (e) => {
 
-  const shield = document.getElementById("shield");
+  const shield =
+    document.getElementById("shield");
 
-  const x = (e.clientY / window.innerHeight) * 30 - 15;
-  const y = (e.clientX / window.innerWidth) * 30 - 15;
+  const x =
+    (e.clientY / window.innerHeight) * 30 - 15;
+
+  const y =
+    (e.clientX / window.innerWidth) * 30 - 15;
 
   shield.style.transform =
     `rotateX(${-x}deg) rotateY(${y}deg)`;
 
 });
 
-/* -----------------------------
-   🤖 FORMAT AI OUTPUT
------------------------------ */
+/* Cursor glow tracking */
+document.querySelectorAll(".glass").forEach(card => {
+
+  card.addEventListener("mousemove", e => {
+
+    const rect =
+      card.getBoundingClientRect();
+
+    const x =
+      e.clientX - rect.left;
+
+    const y =
+      e.clientY - rect.top;
+
+    card.style.setProperty("--x", `${x}px`);
+    card.style.setProperty("--y", `${y}px`);
+
+  });
+
+});
+
+/* AI formatter */
 function formatAI(text) {
 
   const container =
@@ -208,6 +383,7 @@ function formatAI(text) {
     }
 
     else if (line.startsWith("•")) {
+
       sections[current].push(
         line.replace("•", "").trim()
       );
@@ -215,26 +391,21 @@ function formatAI(text) {
 
   });
 
-  /* WHY */
   if (sections.why.length) {
 
     container.innerHTML += `
       <div class="ai-block ai-why">
-        <div class="ai-title">Why</div>
-        <div>
-          ${sections.why.join("<br><br>")}
-        </div>
+        <div class="ai-title">WHY</div>
+        ${sections.why.join("<br><br>")}
       </div>
     `;
   }
 
-  /* RISKS */
   if (sections.risks.length) {
 
     container.innerHTML += `
       <div class="ai-block ai-risk">
-        <div class="ai-title">Risks</div>
-
+        <div class="ai-title">RISKS</div>
         <ul class="space-y-2">
           ${sections.risks.map(r =>
             `<li>• ${r}</li>`
@@ -244,13 +415,11 @@ function formatAI(text) {
     `;
   }
 
-  /* ADVICE */
   if (sections.advice.length) {
 
     container.innerHTML += `
       <div class="ai-block ai-advice">
-        <div class="ai-title">Advice</div>
-
+        <div class="ai-title">ADVICE</div>
         <ul class="space-y-2">
           ${sections.advice.map(a =>
             `<li>• ${a}</li>`
@@ -259,11 +428,10 @@ function formatAI(text) {
       </div>
     `;
   }
+
 }
 
-/* -----------------------------
-   🚀 ANALYZE
------------------------------ */
+/* Analyze */
 async function analyze() {
 
   const btn =
@@ -279,11 +447,9 @@ async function analyze() {
     return;
   }
 
-  /* BUTTON STATE */
   btn.innerText = "Analyzing...";
   btn.disabled = true;
 
-  /* SHOW CARDS */
   document
     .getElementById("resultCard")
     .classList.remove("hidden");
@@ -292,18 +458,10 @@ async function analyze() {
     .getElementById("aiCard")
     .classList.remove("hidden");
 
-  /* LOADING TEXT */
-  document
-    .getElementById("scoreText")
-    .innerText = "Analyzing...";
-
-  document
-    .getElementById("aiStructured")
-    .innerHTML = "Generating insight...";
-
   try {
 
-    const res = await fetch("/analyze", {
+    const res =
+      await fetch("/analyze", {
 
       method: "POST",
 
@@ -317,34 +475,22 @@ async function analyze() {
 
     });
 
-    const data = await res.json();
-
-    console.log(data);
-
-    /* -----------------------------
-       🎯 SCORES
-    ----------------------------- */
-
-    const safeScore =
-      data.safe_score ?? 0;
+    const data =
+      await res.json();
 
     const dangerScore =
       data.danger_score ?? 0;
 
-    /* SHOW DANGER SCORE */
     document
       .getElementById("scoreText")
-      .innerText = `${dangerScore}/100`;
+      .innerText =
+      `${dangerScore}/100`;
 
     const bar =
       document.getElementById("scoreBar");
 
     bar.style.width =
       `${dangerScore}%`;
-
-    /* -----------------------------
-       🎨 BAR COLORS
-    ----------------------------- */
 
     if (dangerScore >= 70) {
 
@@ -364,12 +510,7 @@ async function analyze() {
 
       bar.style.background =
         "#00F5FF";
-
     }
-
-    /* -----------------------------
-       🚦 STATUS BADGE
-    ----------------------------- */
 
     const badge =
       document.getElementById("statusBadge");
@@ -378,7 +519,7 @@ async function analyze() {
       data.status;
 
     badge.className =
-      "inline-block px-3 py-1 rounded-full text-sm";
+      "inline-block px-4 py-1 rounded-full text-sm";
 
     if (data.status === "Dangerous") {
 
@@ -389,64 +530,37 @@ async function analyze() {
 
     }
 
-    else if (data.status === "Suspicious") {
-
-      badge.classList.add(
-        "bg-yellow-400/20",
-        "text-yellow-300"
-      );
-
-    }
-
     else {
 
       badge.classList.add(
         "bg-cyan-400/20",
         "text-cyan-300"
       );
-
     }
 
-    /* -----------------------------
-       📝 REASONS
-    ----------------------------- */
-
-    const reasonsList =
+    const reasons =
       document.getElementById("reasonsList");
 
-    reasonsList.innerHTML = "";
+    reasons.innerHTML = "";
 
     data.reasons.forEach(reason => {
 
-      const li =
-        document.createElement("li");
-
-      li.innerText =
-        "• " + reason;
-
-      reasonsList.appendChild(li);
-
+      reasons.innerHTML +=
+        `<li>• ${reason}</li>`;
     });
-
-    /* -----------------------------
-       🤖 AI OUTPUT
-    ----------------------------- */
 
     formatAI(data.ai_summary);
 
   }
 
-  catch (err) {
+  catch(err) {
 
     console.error(err);
 
-    alert(
-      "Something went wrong. Check backend."
-    );
+    alert("Backend error");
 
   }
 
-  /* RESET BUTTON */
   btn.innerText = "Analyze";
   btn.disabled = false;
 }
@@ -455,3 +569,4 @@ async function analyze() {
 
 </body>
 </html>
+```
