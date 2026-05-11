@@ -2,13 +2,13 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import pandas as pd
 import pickle
-import os
 import requests
 
 from dotenv import load_dotenv
 load_dotenv()
 
 import google.generativeai as genai
+import os
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
